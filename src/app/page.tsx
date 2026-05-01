@@ -7,11 +7,16 @@ import { Hero } from "@/components/Hero";
 import { Partners } from "@/components/Partners";
 import { Technologies } from "@/components/Technologies";
 import { Testimonials } from "@/components/Testimonials";
+import { client } from "@/sanity/lib/client";
+import { siteSettingsQuery } from "@/sanity/lib/queries";
 
-export default function Home() {
+export default async function Home() {
+  let settings: any = null;
+  try { settings = await client.fetch(siteSettingsQuery); } catch {}
+
   return (
     <Container>
-      <Hero />
+      <Hero primaryCta={settings?.primaryCta} secondaryCta={settings?.secondaryCta} />
       <FeaturesSection />
       <Partners />
       <Banner />
