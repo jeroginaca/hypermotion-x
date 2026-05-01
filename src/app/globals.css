@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #ea4062;
+  --color-dark: #2f2f2f;
+  --color-off-white: #fbfbfb;
+  --font-display: var(--font-mango-grotesque), "Mango Grotesque", sans-serif;
+}
+
+/*
+  Hero title sizing:
+  Mobile  — 26.7vw fills the 450px frame at 120px (Figma spec)
+  Desktop — calc(16.67vw - 0.5rem) scales against the content area
+            (viewport minus 48px total container padding), so the text
+            stays on one line from any viewport up to the 1728px max-width.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --hero-title-size: clamp(4rem, 26.7vw, 7.5rem);
+  /* Section titles: 88px on mobile, same responsive 288px formula on desktop */
+  --section-title-size: 5.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (min-width: 768px) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --hero-title-size: clamp(8rem, calc(16.67vw - 0.5rem), 18rem);
+    --section-title-size: clamp(8rem, calc(16.67vw - 0.5rem), 18rem);
   }
 }
 
+/*
+  Trims the internal font leading (ascender/descender space) built into
+  Mango Grotesque. Clips to cap-height on top and baseline on bottom.
+  Use on any display heading where the extra whitespace is visible.
+  Browser support: Chrome 123+, Safari 17.4+, Firefox 130+
+*/
+@utility trim-text {
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #fbfbfb;
+  margin: 0;
+  padding: 0;
 }
