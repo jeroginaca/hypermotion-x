@@ -1,40 +1,36 @@
 import Image from "next/image";
+import { client } from "@/sanity/lib/client";
+import { urlFor } from "@/sanity/lib/image";
+import { partnersQuery } from "@/sanity/lib/queries";
 
-/*
-  Mobile  (< md): flex-col — heading full-width, logos in a horizontal row below
-  Tablet+ (≥ md): flex-row — heading on the left (flex-1),
-                             logos stacked vertically in a right column (12.5rem = 200px),
-                             spread top-to-bottom with justify-between across the heading height
-*/
-
-const logos = [
-  {
-    name: "Bosch",
-    src: "https://www.figma.com/api/mcp/asset/747808f2-f41e-4a16-868c-f69ae8b0938e",
-    height: 45.161,
-  },
-  {
-    name: "Nvidia",
-    src: "https://www.figma.com/api/mcp/asset/a62ee9ba-0187-4cc0-b33c-39035c28e7ef",
-    height: 38,
-  },
-  {
-    name: "Brembo",
-    src: "https://www.figma.com/api/mcp/asset/43109884-7a10-4f16-b5d0-c8e920ed1223",
-    height: 46.302,
-  },
-  {
-    name: "Pirelli",
-    src: "https://www.figma.com/api/mcp/asset/0a9aa02d-fb15-41ac-ba4d-632933a379b5",
-    height: 42.52,
-  },
+const FALLBACK = [
+  { _id: "bosch",   name: "Bosch",   logoUrl: "https://www.figma.com/api/mcp/asset/747808f2-f41e-4a16-868c-f69ae8b0938e", logoHeight: 45.161 },
+  { _id: "nvidia",  name: "Nvidia",  logoUrl: "https://www.figma.com/api/mcp/asset/a62ee9ba-0187-4cc0-b33c-39035c28e7ef", logoHeight: 38 },
+  { _id: "brembo",  name: "Brembo",  logoUrl: "https://www.figma.com/api/mcp/asset/43109884-7a10-4f16-b5d0-c8e920ed1223", logoHeight: 46.302 },
+  { _id: "pirelli", name: "Pirelli", logoUrl: "https://www.figma.com/api/mcp/asset/0a9aa02d-fb15-41ac-ba4d-632933a379b5", logoHeight: 42.52 },
 ];
 
-export function Partners() {
+export async function Partners() {
+  let sanityItems: any[] = [];
+
+  try {
+    sanityItems = await client.fetch(partnersQuery);
+  } catch {
+    // Sanity not configured yet — use fallback
+  }
+
+  const logos =
+    sanityItems.length > 0
+      ? sanityItems.map((p: any) => ({
+          _id: p._id,
+          name: p.name,
+          logoUrl: p.logo ? urlFor(p.logo).width(400).url() : "",
+          logoHeight: p.logoHeight ?? 45,
+        }))
+      : FALLBACK;
+
   return (
     <div className="flex flex-col md:flex-row md:items-end w-full overflow-hidden">
-
-      {/* Heading — same responsive size token as section titles */}
       <p
         className="flex-1 min-w-0 font-display font-bold text-dark uppercase leading-[0.9] tracking-[-0.01em]"
         style={{ fontSize: "var(--section-title-size)" }}
@@ -42,12 +38,6 @@ export function Partners() {
         Created in partnership with industry leaders
       </p>
 
-      {/*
-        Logos
-        Mobile:  flex-row wrap, gap 66px (4.125rem)
-        Tablet+: flex-col, 12.5rem (200px) wide column, justify-between to span
-                 the full height of the heading block
-      */}
       <div className="
         flex flex-row flex-wrap items-center gap-[4.125rem] mt-8
         md:flex-col md:flex-nowrap md:justify-between md:items-start
@@ -55,12 +45,12 @@ export function Partners() {
       ">
         {logos.map((logo) => (
           <div
-            key={logo.name}
+            key={logo._id}
             className="relative shrink-0 w-[12.5rem]"
-            style={{ height: `${(logo.height / 16).toFixed(3)}rem` }}
+            style={{ height: `${(logo.logoHeight / 16).toFixed(3)}rem` }}
           >
             <Image
-              src={logo.src}
+              src={logo.logoUrl}
               alt={logo.name}
               fill
               unoptimized
@@ -70,7 +60,6 @@ export function Partners() {
           </div>
         ))}
       </div>
-
     </div>
   );
 }
