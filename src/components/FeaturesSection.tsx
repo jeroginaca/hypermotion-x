@@ -2,6 +2,7 @@ import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 import { featuresSectionQuery } from "@/sanity/lib/queries";
 import { FeaturesGrid } from "@/components/Features";
+import { AnimatedHeading } from "@/components/AnimatedHeading";
 
 const FALLBACK = {
   sectionTitle: "Redefining Speed",
@@ -29,12 +30,11 @@ export async function FeaturesSection() {
 
   return (
     <section className="flex flex-col items-start w-full">
-      <h2
-        className="font-display text-dark leading-[0.9] w-full font-normal tracking-[-0.165rem] md:font-bold md:uppercase md:tracking-[-0.18rem]"
+      <AnimatedHeading
+        text={sectionTitle}
+        className="font-display text-dark leading-[0.9] w-full font-normal tracking-[-0.165rem] md:font-bold md:uppercase md:tracking-[-0.18rem] md:whitespace-nowrap"
         style={{ fontSize: "var(--section-title-size)" }}
-      >
-        {sectionTitle}
-      </h2>
+      />
       <FeaturesGrid features={features} />
     </section>
   );

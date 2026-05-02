@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { AnimatedHeading } from "@/components/AnimatedHeading";
+import { Magnetic } from "@/components/Magnetic";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 import { partnersSectionQuery, partnersQuery } from "@/sanity/lib/queries";
@@ -30,15 +32,19 @@ export async function Partners() {
       ];
 
   return (
-    <div className="flex flex-col md:flex-row md:items-end w-full overflow-hidden">
-      <p className="flex-1 min-w-0 font-display font-bold text-dark uppercase leading-[0.9] tracking-[-0.01em]" style={{ fontSize: "var(--section-title-size)" }}>
-        {heading}
-      </p>
+    <div className="flex flex-col md:flex-row md:items-end w-full">
+      <AnimatedHeading
+        text={heading}
+        className="flex-1 min-w-0 font-display font-bold text-dark uppercase leading-[0.9] tracking-[-0.01em]"
+        style={{ fontSize: "var(--section-title-size)" }}
+      />
       <div className="flex flex-row flex-wrap items-center gap-[4.125rem] mt-8 md:flex-col md:flex-nowrap md:justify-between md:items-start md:self-stretch md:w-[12.5rem] md:shrink-0 md:gap-0 md:mt-0 md:pb-8">
         {logos.map((logo) => (
-          <div key={logo._id} className="relative shrink-0 w-[12.5rem]" style={{ height: `${(logo.logoHeight / 16).toFixed(3)}rem` }}>
-            <Image src={logo.logoUrl} alt={logo.name} fill unoptimized sizes="200px" className="object-contain object-center md:object-left" />
-          </div>
+          <Magnetic key={logo._id} className="p-4 -m-4 shrink-0">
+            <div className="relative w-[12.5rem]" style={{ height: `${(logo.logoHeight / 16).toFixed(3)}rem` }}>
+              <Image src={logo.logoUrl} alt={logo.name} fill unoptimized sizes="200px" className="object-contain object-center md:object-left" />
+            </div>
+          </Magnetic>
         ))}
       </div>
     </div>

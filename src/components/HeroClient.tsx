@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { Fragment, useRef } from "react";
+import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@/components/Button";
 
-gsap.registerPlugin(useGSAP);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 type Props = {
   title: string;
@@ -17,30 +18,35 @@ type Props = {
 };
 
 /*
-  Animation sequence:
-  1. Three colour blocks (red → white → dark) wipe off the image right→left,
-     0.3s stagger between each. Uses matchMedia so only the visible image
-     (mobile or desktop) drives the timing.
-  2. Title words clip up from below, staggered per word.
-  3. CTA buttons fade + slide up.
+  Load animation:
+    1. Colour sweep (red → white → dark wipe)
+    2. Title words clip up (yPercent + opacity)
+    3. CTAs rise in
 
-  Overlay stacking (bottom → top in DOM = bottom → top visually):
-    dark (#2f2f2f) — last to sweep
-    white (#fbfbfb) — sweeps second
-    red  (#ea4062) — sweeps first (on top)
+  Scroll animation (desktop only):
+    - First word  → slides LEFT  (hero-scroll-left  on outer overflow-hidden span)
+    - Other words → slide RIGHT  (hero-scroll-right on outer overflow-hidden span)
+    - Image       → subtle zoom  (hero-img-zoom on the img element)
+
+  Key detail: scroll classes are on the OUTER overflow-hidden spans so words
+  move freely without being clipped. The load animation targets the INNER
+  hero-word spans for the vertical clip reveal.
 */
 function WordSplit({ text }: { text: string }) {
   const words = text.split(" ");
   return (
     <>
       {words.map((word, i) => (
-        <Fragment key={i}>
-          <span className="inline-block overflow-hidden leading-[0.95]">
-            <span className="hero-word inline-block">{word}</span>
-          </span>
-          {/* Space lives outside overflow-hidden so it's never clipped */}
-          {i < words.length - 1 && " "}
-        </Fragment>
+        <span
+          key={i}
+          className={[
+            "inline-block overflow-hidden leading-[0.95] align-top",
+            i === 0 ? "hero-scroll-left" : "hero-scroll-right",
+            i < words.length - 1 ? "mr-[0.2em]" : "",
+          ].join(" ")}
+        >
+          <span className="hero-word inline-block">{word}</span>
+        </span>
       ))}
     </>
   );
@@ -50,10 +56,9 @@ function Overlays({ prefix }: { prefix: "mobile" | "desktop" }) {
   const style = { transformOrigin: "right center", borderRadius: "16px" };
   return (
     <>
-      {/* DOM order: dark first (bottom), then white, then red (top) */}
-      <div className={`hero-overlay-${prefix} absolute inset-0 bg-dark      pointer-events-none`} style={style} />
-      <div className={`hero-overlay-${prefix} absolute inset-0 bg-off-white  pointer-events-none`} style={style} />
-      <div className={`hero-overlay-${prefix} absolute inset-0 bg-primary    pointer-events-none`} style={style} />
+      <div className={`hero-overlay-${prefix} absolute inset-0 bg-dark     pointer-events-none`} style={style} />
+      <div className={`hero-overlay-${prefix} absolute inset-0 bg-off-white pointer-events-none`} style={style} />
+      <div className={`hero-overlay-${prefix} absolute inset-0 bg-primary   pointer-events-none`} style={style} />
     </>
   );
 }
@@ -62,7 +67,6 @@ export function HeroClient({ title, desktopUrl, mobileUrl, primaryCta, secondary
   const ref = useRef<HTMLElement>(null);
 
   useGSAP(() => {
-    // Hide words immediately — GSAP owns the transform, no CSS conflict
     gsap.set(".hero-word", { yPercent: 115, opacity: 0 });
 
     const mm = gsap.matchMedia();
@@ -71,24 +75,39 @@ export function HeroClient({ title, desktopUrl, mobileUrl, primaryCta, secondary
       scaleX: 0,
       duration: 0.9,
       ease: "power3.inOut",
-      // "end" = last DOM element (red) animates first → middle → first (dark)
       stagger: { each: 0.3, from: "end" as const },
     };
 
-    // Mobile: animate only the mobile overlays
+    // ── Mobile load animation ──────────────────────────────────────────────
     mm.add("(max-width: 767px)", () => {
       const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
       tl.to(".hero-overlay-mobile", overlayConfig);
-      tl.to(".hero-word", { yPercent: 0, opacity: 1, duration: 1.1, stagger: 0.12 }, 0);
+      tl.to(".hero-word",  { yPercent: 0, opacity: 1, duration: 1.1, stagger: 0.12 }, 0);
       tl.fromTo(".hero-cta", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, stagger: 0.12 }, "-=0.5");
     });
 
-    // Desktop: animate only the desktop overlays
+    // ── Desktop load + scroll animations ─────────────────────────────────
     mm.add("(min-width: 768px)", () => {
+      // Load
       const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
       tl.to(".hero-overlay-desktop", overlayConfig);
-      tl.to(".hero-word", { yPercent: 0, opacity: 1, duration: 1.1, stagger: 0.12 }, 0);
+      tl.to(".hero-word",  { yPercent: 0, opacity: 1, duration: 1.1, stagger: 0.12 }, 0);
       tl.fromTo(".hero-cta", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, stagger: 0.12 }, "-=0.5");
+
+      // Scroll — words split left/right, image zooms in
+      const scrollTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      scrollTl
+        .to(".hero-scroll-left",  { x: "-35vw", opacity: 0, ease: "none" }, 0)
+        .to(".hero-scroll-right", { x:  "35vw", opacity: 0, ease: "none" }, 0)
+        .to(".hero-img-zoom",     { scale: 1.25, ease: "none" }, 0);
     });
 
     return () => mm.revert();
@@ -100,7 +119,7 @@ export function HeroClient({ title, desktopUrl, mobileUrl, primaryCta, secondary
       {/* Title */}
       <h1
         className="font-display text-dark uppercase w-full pt-6 relative z-[2] leading-[0.9] tracking-[-0.01em]
-                   text-left font-medium md:text-center md:font-bold"
+                   text-left font-medium md:text-center md:font-bold md:whitespace-nowrap"
         style={{ fontSize: "var(--hero-title-size)" }}
       >
         <WordSplit text={title} />
@@ -110,13 +129,13 @@ export function HeroClient({ title, desktopUrl, mobileUrl, primaryCta, secondary
 
         {/* Mobile image */}
         <div className="relative w-full overflow-hidden rounded-2xl md:hidden" style={{ aspectRatio: "450 / 680" }}>
-          <Image src={mobileUrl} alt={title} fill unoptimized priority sizes="100vw" className="object-cover" />
+          <Image src={mobileUrl} alt={title} fill unoptimized priority sizes="100vw" className="object-cover hero-img-zoom" />
           <Overlays prefix="mobile" />
         </div>
 
-        {/* Desktop image */}
-        <div className="relative w-full hidden md:block" style={{ aspectRatio: "1728 / 680" }}>
-          <Image src={desktopUrl} alt={title} fill unoptimized priority sizes="100vw" className="object-cover" />
+        {/* Desktop image — overflow-hidden needed for the zoom parallax */}
+        <div className="relative w-full hidden md:block overflow-hidden" style={{ aspectRatio: "1728 / 680", borderRadius: "16px" }}>
+          <Image src={desktopUrl} alt={title} fill unoptimized priority sizes="100vw" className="object-cover hero-img-zoom" />
           <Overlays prefix="desktop" />
         </div>
 
