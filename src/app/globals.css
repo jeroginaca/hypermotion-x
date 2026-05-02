@@ -22,7 +22,10 @@
 
 @media (min-width: 768px) {
   :root {
-    --hero-title-size: clamp(8rem, calc(16.67vw - 0.5rem), 18rem);
+    /* Cap reduced to 16rem: at 18rem the text + mr-[0.2em] word margins
+       overflow the 1680px content area on wide screens (4K+), causing
+       overflow-hidden to clip the last character. 16rem fits cleanly. */
+    --hero-title-size: clamp(8rem, calc(16.67vw - 0.5rem), 16rem);
     --section-title-size: clamp(8rem, calc(16.67vw - 0.5rem), 18rem);
   }
 }
